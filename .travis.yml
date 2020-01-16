@@ -1,3 +1,4 @@
+sudo: required
 language: python
 python:
   - "3.5"
@@ -10,6 +11,8 @@ python:
 services:
     - mysql
 
+cache: pip
+
 branches:
   only:
   - master
@@ -17,7 +20,10 @@ branches:
   - feature/*
 
 install:
-  - sudo apt-get install -y pylint python3-mysqldb libmysqlclient-dev
+  - sudo apt-get install -y pylint
+  - sudo apt-get install -y python3-mysqldb libmysqlclient-dev
+  - sudo apt-get install -y dpkg-dev dpkg
+  - sudo dpkg -L python3-mysqldb
   - sudo pip install -U pytest
   - sudo pip install -r requirements.txt
 
