@@ -5,12 +5,14 @@
 MySQL wrapper
 """
 
+import sys
 import time
 
 try:
 	import MySQLdb
 except ImportError as import_err:
 	print('run $ pip install -r requirements.txt, please [err="%s"]' % import_err)
+	sys.exit(1)
 
 
 class Connect(object):
