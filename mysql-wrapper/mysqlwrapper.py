@@ -6,8 +6,11 @@ MySQL wrapper
 """
 
 import time
-import MySQLdb
-import MySQLdb.cursors
+
+try:
+	import MySQLdb
+except ImportError as import_err:
+	print('run $ pip install -r requirements.txt, please [err="%s"]' % import_err)
 
 
 class Connect(object):
