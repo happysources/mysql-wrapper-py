@@ -7,6 +7,9 @@ python:
   - "3.8-dev"  # 3.8 development branch
   - "nightly"  # nightly build
 
+services:
+    - mysql
+
 branches:
   only:
   - master
