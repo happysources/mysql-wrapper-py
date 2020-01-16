@@ -17,8 +17,9 @@ branches:
   - feature/*
 
 install:
-  - sudo sudo apt-get install -y pylint
+  - sudo apt-get install -y pylint python3-mysqldb
   - sudo pip install -U pytest
+  - sudo pip install -r requirements.txt
 
 before_script:
   - export PYTHONPATH=$PYTHONPATH:$PWD:$PWD/mysql-wrapper/
