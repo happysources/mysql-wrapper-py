@@ -23,12 +23,12 @@ branches:
   - feature/*
 
 install:
-  - sudo apt-get install -y pylint
-  - sudo apt-get install -y python3-mysqldb libmysqlclient-dev python3-dev
+  - sudo apt-get install -y pylint3
+  - sudo apt-get install -y python3-mysqldb libmysqlclient-dev python3-dev python3-pip
   - sudo apt-get install -y dpkg-dev dpkg
   - sudo dpkg -L python3-mysqldb
-  - sudo pip install -U pytest
-  - sudo pip install -r requirements.txt
+  - sudo pip3 install -U pytest
+  - sudo pip3 install -r requirements.txt
 
 before_script:
   - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysql-wrapper/
@@ -36,8 +36,8 @@ before_script:
 
 # command to run tests
 script:
-  - echo "pylint --errors-only mysql-wrapper/*.py ... "
-  - pylint --errors-only mysql-wrapper/*.py
+  - echo "pylint3 --errors-only mysql-wrapper/*.py ... "
+  - pylint3 --errors-only mysql-wrapper/*.py
 
 #  - echo "pytest ... "
 #  - pytest
