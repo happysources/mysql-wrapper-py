@@ -9,9 +9,12 @@ python:
   - "nightly"  # nightly build
 
 services:
-    - mysql
+  - mysql
 
-cache: pip
+env:
+  - PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysql-wrapper/
+
+#cache: pip
 
 branches:
   only:
@@ -28,7 +31,7 @@ install:
   - sudo pip install -r requirements.txt
 
 before_script:
-#  - export PYTHONPATH=$PYTHONPATH:$PWD:$PWD/mysql-wrapper/
+  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysql-wrapper/
   - mysql -u root < test_db.sql
 
 # command to run tests
