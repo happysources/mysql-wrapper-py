@@ -242,20 +242,3 @@ class Connect(object):
 
 			except Exception as emsg:
 				print('mysql Exception, cursor close err="%s"', emsg)
-
-
-if __name__ == '__main__':
-
-	import pprint
-
-	DBH = Connect(user='test_user', passwd='t3st_p8sSwd', db='test_db')
-	CURSOR = DBH.cursor()
-
-	CURSOR.execute('SELECT * FROM test_table LIMIT 5')
-	pprint.pprint(CURSOR.fetchall())
-
-	CURSOR.execute('SELECT * FROM test_table LIMIT 5')
-	pprint.pprint(CURSOR.fetchone())
-
-	CURSOR.close()
-	DBH.close()
