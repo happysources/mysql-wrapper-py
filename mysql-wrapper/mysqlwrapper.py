@@ -140,8 +140,8 @@ class Connect(object):
 			self.__create()
 
 
-		def __getattr__(self, name):
-			return getattr(self.__cursor, name)
+		#def __getattr__(self, name):
+		#	return getattr(self.__cursor, name)
 
 
 		def __create(self):
@@ -159,11 +159,8 @@ class Connect(object):
 			return True
 
 
-		def execute(self, query='', param=()):
-			""" cursor execute """
-
-			# default
-			found = 0
+		def __test(self):
+			""" tested cursor if exist? """
 
 			# reconnect id cursor not exist
 			if not self.__cursor:
@@ -172,6 +169,18 @@ class Connect(object):
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor [first connect]')
 
 				self.__cursor()
+
+			return True
+
+
+		def execute(self, query='', param=()):
+			""" cursor execute """
+
+			# default
+			found = 0
+
+			# test if cursor exist?
+			self.__test()
 
 			# sql execute
 			start_time = time.time()
@@ -230,6 +239,7 @@ class Connect(object):
 
 			try:
 				self.__cursor.close()
+
 			except Exception as emsg:
 				print('mysql Exception, cursor close err="%s"', emsg)
 
@@ -238,7 +248,7 @@ if __name__ == '__main__':
 
 	import pprint
 
-	DBH = Connect(user='test_user', passwd='test_passwd', db='test_db')
+	DBH = Connect(user='test_user', passwd='t3st_p8sSwd', db='test_db')
 	CURSOR = DBH.cursor()
 
 	CURSOR.execute('SELECT * FROM test_table LIMIT 5')
