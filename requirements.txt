@@ -1,1 +1,2 @@
-setuptools >= 21.0.0
+setuptools
+mysqlclient
