@@ -1,7 +1,7 @@
 
 CREATE DATABASE IF NOT EXISTS test_db CHARSET utf8; 
 
-GRANT select,insert,update,delete ON test_db.*  TO test_user@'%' IDENTIFIED BY '20bGPR8r3jMd9rAa3BP';
+GRANT select,insert,update,delete ON test_db.*  TO test_user@'%' IDENTIFIED BY 'test_passwd';
 
 flush privileges;
 

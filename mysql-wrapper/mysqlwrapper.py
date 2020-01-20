@@ -18,9 +18,9 @@ except ImportError as import_err:
 
 
 class Connect(object):
-	""" MySQL Connect object """
+	""" MySQLwrapper Connect object """
 
-	def __init__(self, user='root', passwd='', db='', host='localhost', param={}):
+	def __init__(self, user='root', passwd='', db='', host='localhost', param={}, **kw):
 		"""
 		Connect initialize
 
@@ -36,7 +36,7 @@ class Connect(object):
 		"""
 
 		# input params
-		self.__param = {\
+		self._param = {\
 			'host':host,\
 			'db':db,\
 			'user':user,\
@@ -47,10 +47,11 @@ class Connect(object):
 			'charset':param.get('charset', 'utf8'),\
 			'autocommit':param.get('autocommit', 1),\
 			'dummy':param.get('dummy', 1),\
+			'debug':param.get('debug', 0),\
 		}
 
 		# default
-		self.__dbh = None
+		self.__share = {'dbh':None}
 
 		#if not self.__conv:
 		#	from MySQLdb.converters import conversions
@@ -61,63 +62,75 @@ class Connect(object):
 
 		# connect
 		self.__connect_time = 0
-		self.__connect()
+		self._connect()
 
 
-	def __connect(self):
+	def __getattr__(self,name):
+        	return getattr(self.__share['dbh'], name)
+
+
+	def _connect(self):
 		""" connect """
 
 		start_time = time.time()
 
 		# connect
 		try:
-			self.__dbh = MySQLdb.Connect(\
-				host=self.__param['host'],\
-				db=self.__param['db'],\
-				user=self.__param['user'],\
-				passwd=self.__param['passwd'],\
-				port=self.__param['port'],\
-				connect_timeout=self.__param['connect_timeout'])
+			dbh = MySQLdb.Connect(\
+				host=self._param['host'],\
+				db=self._param['db'],\
+				user=self._param['user'],\
+				passwd=self._param['passwd'],\
+				port=self._param['port'],\
+				connect_timeout=self._param['connect_timeout'])
 			self.__connect_time = time.time() - start_time
 
 		except BaseException as emsg:
 			print('connect error=%s' % emsg)
-			if self.__param['dummy']:
+			if self._param.get('dummy',1):
 				print('mysql no connect')
 				return -1
 
 			raise
 
 		# set autocommit an charset
-		self.__dbh.autocommit(self.__param['autocommit'])
-		self.__dbh.set_character_set(self.__param['charset'])
+		dbh.autocommit(self._param['autocommit'])
+		dbh.set_character_set(self._param['charset'])
 
 		# connect time
 		self.__connect_time = time.time() - start_time
+
+		self.__share['dbh'] = dbh
+
+
+	def _dbh(self):
+		""" dbh """
+		return self.__share['dbh']
 
 
 	def cursor(self, dict_cursor=None):
 		""" mysql cursor """
 
 		if not dict_cursor:
-			return self.Cursor(dbh=self.__dbh, dict_cursor=self.__param['dict_cursor'])
+			dict_cursor=self._param['dict_cursor']
 
-		return self.Cursor(dbh=self.__dbh, dict_cursor=dict_cursor)
+		return self.Cursor(dbh=self, dict_cursor=dict_cursor, debug=self._param['debug'])
 
 
 	def close(self):
 		""" close """
 
 		try:
-			self.__dbh.close()
+			self.__share['dbh'].close()
 		except BaseException as emsg:
 			print('mysql Exception, database close err="%s"', emsg)
 
 
-	class Cursor(object):
-		""" MySQL Cursor object """
 
-		def __init__(self, dbh, dict_cursor=None):
+	class Cursor(object):
+		""" MySQLwrapper Cursor object """
+
+		def __init__(self, dbh=None, dict_cursor=None, debug=0):
 			"""
 			Cursor initialize
 
@@ -132,6 +145,7 @@ class Connect(object):
 			# input params
 			self.__dbh = dbh
 			self.__dict_cursor = dict_cursor
+			self.__debug = debug
 
 			# default
 			self.__cursor = None
@@ -140,31 +154,39 @@ class Connect(object):
 			self.__create()
 
 
-		#def __getattr__(self, name):
-		#	return getattr(self.__cursor, name)
+		def __getattr__(self, name):
+			return getattr(self.__cursor, name)
 
 
 		def __create(self):
 			""" create cursor """
 
-			if not self.__dbh:
+			if self.__debug:
+				print('create() __dbh:',dir(self.__dbh))
+				print(self.__dbh.__class__)
+
+			if not self.__dbh._dbh():
 				print('mysql cursor: no connect')
 				return False
 
 			if self.__dict_cursor:
-				self.__cursor = self.__dbh.cursor(MySQLdb.cursors.DictCursor)
+				self.__cursor = self.__dbh._dbh().cursor(MySQLdb.cursors.DictCursor)
 				return True
 
-			self.__cursor = self.__dbh.cursor()
+			self.__cursor = self.__dbh._dbh().cursor()
 			return True
 
 
 		def __test(self):
 			""" tested cursor if exist? """
 
+			if self.__debug:
+				print('test() __dbh:',dir(self.__dbh))
+				print(self.__dbh.__doc__)
+
 			# reconnect id cursor not exist
 			if not self.__cursor:
-				ret_connect = Connect.__connect(self)
+				ret_connect = self.__dbh._connect()
 				if ret_connect == -1:
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor [first connect]')
 
@@ -190,7 +212,7 @@ class Connect(object):
 
 			except MySQLdb.OperationalError as mysql_error:
 				print('MySQLdb.OperationalError, err="%s"' % mysql_error)
-				ret_connect = Connect.__connect(self)
+				ret_connect = Connect._connect(self)
 				if ret_connect == -1:
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor, err="%s"' % mysql_error)
 
