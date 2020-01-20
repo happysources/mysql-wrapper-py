@@ -28,7 +28,7 @@ install:
   - sudo pip install -r requirements.txt
 
 before_script:
-  - export PYTHONPATH=$PYTHONPATH:$PWD:$PWD/mysql-wrapper/
+#  - export PYTHONPATH=$PYTHONPATH:$PWD:$PWD/mysql-wrapper/
   - mysql -u root < test_db.sql
 
 # command to run tests
