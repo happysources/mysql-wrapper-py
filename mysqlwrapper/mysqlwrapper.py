@@ -10,7 +10,7 @@ MySQL wrapper
 import sys
 import time
 
-from mysqlwrapper_util import _sql_where, _sql_column, _sql_limit, _sql_set, _debug
+from mysqlwrapper_util import _sql_where, _sql_column, _sql_limit, _sql_set
 
 try:
 	import MySQLdb

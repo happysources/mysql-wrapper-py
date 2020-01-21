@@ -66,8 +66,8 @@ def _sql_limit(limit=0):
 
 	return sql_limit
 
-	
-def _debug( msg):
+
+def _debug(msg):
 	""" debug message """
 
 	#if self.__debug_level:
