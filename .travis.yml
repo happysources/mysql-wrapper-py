@@ -12,7 +12,7 @@ services:
   - mysql
 
 env:
-  - PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysqlwrapper/
+  - PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:/usr/local/lib/python3/dist-packages/:$PWD:$PWD/mysqlwrapper/
 
 #cache: pip
 

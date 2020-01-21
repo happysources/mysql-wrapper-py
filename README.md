@@ -20,3 +20,8 @@ $ apt-get install python3-mysqldb python3 python3-pip
 $ pip3 install -r requirements.txt
 ```
 
+or download bash script
+
+```
+$ wget -O - https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/setup.sh | bash
+```
