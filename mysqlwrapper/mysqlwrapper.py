@@ -10,6 +10,8 @@ MySQL wrapper
 import sys
 import time
 
+from mysqlwrapper_util import _sql_where, _sql_column, _sql_limit, _sql_set, _debug
+
 try:
 	import MySQLdb
 except ImportError as import_err:
@@ -20,20 +22,18 @@ except ImportError as import_err:
 class Connect(object):
 	""" MySQLwrapper Connect object """
 
-	def __init__(self, user='root', passwd='', db='', host='localhost', param={}, **kw):
-		"""
-		Connect initialize
+	def __init__(self, user='root', passwd='', db='', host='localhost', param=None):
+		""" Connect initialize
 
 		Parameters:
 			user (str): mysql user
 			passwd (str): mysql password
 			db (str): mysql database
 			host (str): mysql hostname or ip
-			param (struct): mysql parameters for connect
+			param (dict): mysql parameters for connect """
 
-		Returns:
-			None
-		"""
+		if not param:
+			param = {}
 
 		# input params
 		self._param = {\
@@ -65,8 +65,8 @@ class Connect(object):
 		self._connect()
 
 
-	def __getattr__(self,name):
-        	return getattr(self.__share['dbh'], name)
+	def __getattr__(self, name):
+		return getattr(self.__share['dbh'], name)
 
 
 	def _connect(self):
@@ -87,7 +87,7 @@ class Connect(object):
 
 		except BaseException as emsg:
 			print('connect error=%s' % emsg)
-			if self._param.get('dummy',1):
+			if self._param.get('dummy', 1):
 				print('mysql no connect')
 				return -1
 
@@ -112,7 +112,7 @@ class Connect(object):
 		""" mysql cursor """
 
 		if not dict_cursor:
-			dict_cursor=self._param['dict_cursor']
+			dict_cursor = self._param['dict_cursor']
 
 		return self.Cursor(dbh=self, dict_cursor=dict_cursor, debug=self._param['debug'])
 
@@ -131,21 +131,16 @@ class Connect(object):
 		""" MySQLwrapper Cursor object """
 
 		def __init__(self, dbh=None, dict_cursor=None, debug=0):
-			"""
-			Cursor initialize
+			""" Cursor initialize
 
 			Parameters:
 				dbh (object): database connect
-				dict_cursor (int): dictionary cursor
-
-			Returns:
-				None
-			"""
+				dict_cursor (int): dictionary cursor """
 
 			# input params
 			self.__dbh = dbh
 			self.__dict_cursor = dict_cursor
-			self.__debug = debug
+			self.__debug_level = debug
 
 			# default
 			self.__cursor = None
@@ -158,12 +153,17 @@ class Connect(object):
 			return getattr(self.__cursor, name)
 
 
+		def __debug(self, msg):
+			""" debug message """
+			if self.__debug_level:
+				print(msg)
+
+
 		def __create(self):
 			""" create cursor """
 
-			if self.__debug:
-				print('create() __dbh:',dir(self.__dbh))
-				print(self.__dbh.__class__)
+			self.__debug('create() __dbh dir: %s' % dir(self.__dbh))
+			self.__debug('create() __dbh doc: %s' % self.__dbh.__doc__)
 
 			if not self.__dbh._dbh():
 				print('mysql cursor: no connect')
@@ -179,10 +179,6 @@ class Connect(object):
 
 		def __test(self):
 			""" tested cursor if exist? """
-
-			if self.__debug:
-				print('test() __dbh:',dir(self.__dbh))
-				print(self.__dbh.__doc__)
 
 			# reconnect id cursor not exist
 			if not self.__cursor:
@@ -207,6 +203,12 @@ class Connect(object):
 			# sql execute
 			start_time = time.time()
 
+			self.__debug('execute sql param: %s' % str(param))
+			self.__debug('execute sql query: %s' % query)
+
+			__query = query % tuple(param)
+			self.__debug('execute sql: %s' % __query)
+
 			try:
 				found = self.__cursor.execute(query, param)
 
@@ -224,8 +226,7 @@ class Connect(object):
 
 			run_time = time.time() - start_time
 
-			print('execute query time=%.3fs found=%s' % (run_time, found))
-
+			print('execute query: time=%.3fs found=%s' % (run_time, found))
 			return found
 
 
@@ -241,8 +242,7 @@ class Connect(object):
 
 			run_time = time.time() - start_time
 
-			print('fetch%s query time=%.3fs' % (fetch_type, run_time,))
-
+			print('fetch%s query: time=%.3fs' % (fetch_type, run_time,))
 			return ret
 
 
@@ -262,5 +262,99 @@ class Connect(object):
 			try:
 				self.__cursor.close()
 
-			except Exception as emsg:
+			except BaseException as emsg:
 				print('mysql Exception, cursor close err="%s"', emsg)
+
+
+		def select(self, table_name, where_dict, column_list=[], limit=0):
+			""" Simple SELECT
+
+			Parameters:
+				table_name (str): table name
+				where_dict (dict): sql where
+				limit (int): sql limit
+				column_list (array): colum names
+
+			Returns:
+				found (int): row number
+				data (array): data from fetchall() """
+
+			if not table_name:
+				self.__debug('select: table_name must be input')
+				return 0, None
+
+			(sql_where, sql_param) = _sql_where(where_dict)
+
+			found = self.execute(\
+				'SELECT %s FROM %s %s %s' % (\
+					_sql_column(column_list),\
+					table_name,\
+					sql_where,\
+					_sql_limit(limit)),\
+				sql_param)
+
+			if found == 0:
+				return found, None
+
+			return found, self.__cursor.fetchall()
+
+
+		def insert(self, table_name, value_dict):
+			""" Simple INSERT """
+
+			if not table_name or not value_dict:
+				self.__debug('insert: table_name/value_dict must be input')
+				return 0
+
+			(sql_set, sql_param) = _sql_set(value_dict)
+
+			found = self.execute(\
+				'INSERT INTO %s SET %s' % (\
+					table_name,\
+					sql_set),\
+				sql_param)
+
+			return found
+
+
+		def update(self, table_name, value_dict, where_dict, limit=0):
+			""" Simple UPDATE """
+
+			if not table_name and not value_dict:
+				self.__debug('update: table_name/value_dict must be input')
+				return 0
+
+			(sql_set, sql_param) = _sql_set(value_dict)
+			(sql_where, params2) = _sql_where(where_dict)
+
+			for param_name in params2:
+				sql_param.append(param_name)
+
+			found = self.execute(\
+				'UPDATE %s SET %s %s %s' % (\
+					table_name,\
+					sql_set,\
+					sql_where,\
+					_sql_limit(limit)),\
+				sql_param)
+
+			return found
+
+
+		def delete(self, table_name, where_dict={}, limit=0):
+			""" Simple DELETE """
+
+			if not table_name:
+				self.__debug('delete: table_name must be input')
+				return 0
+
+			(sql_where, sql_param) = _sql_where(where_dict)
+
+			found = self.execute(\
+				'DELETE FROM %s %s %s' % (\
+					table_name,\
+					sql_where,\
+					_sql_limit(limit)),\
+				sql_param)
+
+			return found

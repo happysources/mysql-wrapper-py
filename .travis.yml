@@ -12,7 +12,7 @@ services:
   - mysql
 
 env:
-  - PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysql-wrapper/
+  - PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysqlwrapper/
 
 #cache: pip
 
@@ -33,19 +33,19 @@ install:
   - sudo pip3 install -r requirements.txt
 
 before_script:
-  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysql-wrapper/
+  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysqlwrapper/
   - mysql -u root < test_db.sql
 
 # command to run tests
 script:
-  - echo "pylint3 --errors-only mysql-wrapper/*.py ... "
-  - pylint3 --errors-only mysql-wrapper/*.py
+  - echo "pylint3 --errors-only mysqlwrapper/*.py ... "
+  - pylint3 --errors-only mysqlwrapper/*.py
 
 #  - echo "pytest ... "
 #  - pytest
  
   - echo "run mysqlwrapper.py ... "
-  - python mysql-wrapper/mysqlwrapper.py
+  - python mysqlwrapper/mysqlwrapper.py
 
   - echo "run examples ... "
   - python test/example/basic_example.py
