@@ -5,6 +5,14 @@
 Utils for MySQL wrapper
 """
 
+import time
+
+
+def _sql_now():
+	""" now() """
+
+	return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+
 
 def _sql_column(column_list):
 	""" sql columns """
@@ -22,7 +30,7 @@ def _sql_value(value_dict):
 	params = []
 
 	for value_name in value_dict:
-		name_values.append('%s=%%s' % value_name)
+		name_values.append('`%s`=%%s' % value_name)
 		params.append(value_dict[value_name])
 
 	return name_values, params
@@ -36,7 +44,7 @@ def _sql_set(value_dict):
 
 	sets, params = _sql_value(value_dict)
 
-	sql_set = ','.join(sets)
+	sql_set = ', '.join(sets)
 
 	return sql_set, params
 

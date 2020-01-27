@@ -73,6 +73,8 @@ class Connect(object):
 		""" connect """
 
 		start_time = time.time()
+		dbh = None
+		self.__share = {'dbh':dbh}
 
 		# connect
 		try:
@@ -142,6 +144,9 @@ class Connect(object):
 			self.__dict_cursor = dict_cursor
 			self.__debug_level = debug
 
+			self._param = dbh._param
+			self.__share = {'dbh':dbh}
+
 			# default
 			self.__cursor = None
 
@@ -149,8 +154,8 @@ class Connect(object):
 			self.__create()
 
 
-		def __getattr__(self, name):
-			return getattr(self.__cursor, name)
+		#def __getattr__(self, name):
+		#	return getattr(self.__cursor, name)
 
 
 		def __debug(self, msg):
@@ -255,6 +260,9 @@ class Connect(object):
 			""" cursor fetchone """
 			return self.__fetch('one')
 
+		def insert_id(self):
+			""" last insert_id """
+			return self.__dbh.insert_id()
 
 		def close(self):
 			""" cursor close """
