@@ -2,4 +2,4 @@
 indent-string=\t
 
 [MASTER]
-init-hook='import sys; sys.path.append("lib/")'
+init-hook='import sys; sys.path.append("mysqlwrapper/")'
