@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+# todo:
 # pylint: disable=no-member
+# pylint: disable=protected-access
 
 """
 MySQL wrapper
@@ -274,7 +276,7 @@ class Connect(object):
 				print('mysql Exception, cursor close err="%s"', emsg)
 
 
-		def select(self, table_name, where_dict, column_list=[], limit=0):
+		def select(self, table_name, where_dict, column_list=(), limit=0):
 			""" Simple SELECT
 
 			Parameters:
@@ -293,12 +295,9 @@ class Connect(object):
 
 			(sql_where, sql_param) = _sql_where(where_dict)
 
-			found = self.execute(\
-				'SELECT %s FROM %s %s %s' % (\
-					_sql_column(column_list),\
-					table_name,\
-					sql_where,\
-					_sql_limit(limit)),\
+			found = self.execute('SELECT %s FROM %s %s %s' % (\
+				_sql_column(column_list), table_name,\
+				sql_where, _sql_limit(limit)),\
 				sql_param)
 
 			if found == 0:
@@ -316,10 +315,8 @@ class Connect(object):
 
 			(sql_set, sql_param) = _sql_set(value_dict)
 
-			found = self.execute(\
-				'INSERT INTO %s SET %s' % (\
-					table_name,\
-					sql_set),\
+			found = self.execute('INSERT INTO %s SET %s' % (\
+				table_name, sql_set),\
 				sql_param)
 
 			return found
@@ -338,31 +335,27 @@ class Connect(object):
 			for param_name in params2:
 				sql_param.append(param_name)
 
-			found = self.execute(\
-				'UPDATE %s SET %s %s %s' % (\
-					table_name,\
-					sql_set,\
-					sql_where,\
-					_sql_limit(limit)),\
+			found = self.execute('UPDATE %s SET %s %s %s' % (\
+				table_name, sql_set, sql_where, _sql_limit(limit)),\
 				sql_param)
 
 			return found
 
 
-		def delete(self, table_name, where_dict={}, limit=0):
+		def delete(self, table_name, where_dict=None, limit=0):
 			""" Simple DELETE """
 
 			if not table_name:
 				self.__debug('delete: table_name must be input')
 				return 0
 
+			if not where_dict:
+				where_dict = {}
+
 			(sql_where, sql_param) = _sql_where(where_dict)
 
-			found = self.execute(\
-				'DELETE FROM %s %s %s' % (\
-					table_name,\
-					sql_where,\
-					_sql_limit(limit)),\
+			found = self.execute('DELETE FROM %s %s %s' % (\
+				table_name, sql_where, _sql_limit(limit)),\
 				sql_param)
 
 			return found
