@@ -296,7 +296,7 @@ class Connect(object):
 			(sql_where, sql_param) = _sql_where(where_dict)
 
 			found = self.execute('SELECT %s FROM %s %s %s' % (\
-				_sql_column(column_list), table_name,\
+				_sql_column(column_list, table_name), table_name,\
 				sql_where, _sql_limit(limit)),\
 				sql_param)
 

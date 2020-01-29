@@ -14,14 +14,40 @@ def _sql_now():
 	return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
 
 
-def _sql_column(column_list):
+def _sql_column(column_list, table_name=None):
 	""" sql columns """
 
 	if not column_list:
 		return ' * '
 
-	ret = ','.join(column_list)
+	columns = []
+
+	# type: dict
+	if type(column_list) == type({}):
+		for column_name in column_list.keys():
+			as_name = column_list[column_name]
+
+			if column_name.startswith('date_') or column_name.endswith('_date'):
+				columns.append('UNIX_TIMESTAMP(`%s`) AS `%s`' % (column_name, as_name))
+			else:
+				columns.append('`%s` AS `%s`' % (column_name, as_name))
+
+		ret = ', '.join(columns)
+		return ret
+
+	# type: tuple/array
+	for column_name in column_list:
+
+		if column_name == 'id' and table_name:
+			columns.append('`id` AS %s_id' % table_name)
+		elif column_name.startswith('date_') or column_name.endswith('_date'):
+			columns.append('UNIX_TIMESTAMP(`%s`) AS `%s`' % (column_name, column_name))
+		else:
+			columns.append('`%s`' % column_name)
+
+	ret = ', '.join(columns)
 	return ret
+
 
 def _sql_value(value_dict):
 	""" sql NAME=VALUE """
