@@ -9,15 +9,16 @@
 MySQL wrapper
 """
 
-import sys
 import time
 
 from mysqlwrapper_util import _sql_where, _sql_column, _sql_limit, _sql_set
+from logni import log
+
 
 try:
 	import MySQLdb
 except ImportError as import_err:
-	print('run $ pip install -r requirements.txt, please [err="%s"]' % import_err)
+	log.error('run $ pip install -r requirements.txt, please [err="%s"]', import_err, 2)
 	#sys.exit(1)
 
 
@@ -90,9 +91,13 @@ class Connect(object):
 			self.__connect_time = time.time() - start_time
 
 		except BaseException as emsg:
-			print('connect error=%s' % emsg)
+			log.error('mysql host=%s:%s, user=%s, connect error=%s',\
+				(self._param['host'], self._param['port'], self._param['user'],\
+				emsg), 2)
 			if self._param.get('dummy', 1):
-				print('mysql no connect')
+				log.warn('mysql host=%s:%s, user=%s, no connect',\
+					(self._param['host'], self._param['port'],\
+					self._param['user'], emsg), 2)
 				return -1
 
 			raise
@@ -105,6 +110,9 @@ class Connect(object):
 		self.__connect_time = time.time() - start_time
 
 		self.__share['dbh'] = dbh
+
+		log.info('mysql host=%s:%s, user=%s, connect OK',\
+			(self._param['host'], self._param['port'], self._param['user']), 2)
 
 
 	def _dbh(self):
@@ -127,7 +135,7 @@ class Connect(object):
 		try:
 			self.__share['dbh'].close()
 		except BaseException as emsg:
-			print('mysql Exception, database close err="%s"', emsg)
+			log.error('mysql Exception, database close err="%s"', emsg, 2)
 
 
 
@@ -163,17 +171,16 @@ class Connect(object):
 		def __debug(self, msg):
 			""" debug message """
 			if self.__debug_level:
-				print(msg)
+				log.debug('mysql debug=%s', msg, 1)
 
 
 		def __create(self):
 			""" create cursor """
 
-			self.__debug('create() __dbh dir: %s' % dir(self.__dbh))
-			self.__debug('create() __dbh doc: %s' % self.__dbh.__doc__)
+			log.debug('create() __dbh dir: %s', dir(self.__dbh), 1)
 
 			if not self.__dbh._dbh():
-				print('mysql cursor: no connect')
+				log.error('mysql cursor: no connect', (), 2)
 				return False
 
 			if self.__dict_cursor:
@@ -191,6 +198,7 @@ class Connect(object):
 			if not self.__cursor:
 				ret_connect = self.__dbh._connect()
 				if ret_connect == -1:
+					log.error('MySQLdb.InterfaceError: No connect for cursor [first connect]', (), 2)
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor [first connect]')
 
 				self.__cursor()
@@ -210,17 +218,17 @@ class Connect(object):
 			# sql execute
 			start_time = time.time()
 
-			self.__debug('execute sql param: %s' % str(param))
-			self.__debug('execute sql query: %s' % query)
+			log.debug('execute sql param: %s', str(param), 3)
+			log.debug('execute sql query: %s', query, 3)
 
 			__query = query % tuple(param)
-			self.__debug('execute sql: %s' % __query)
+			log.debug('execute sql: %s', __query, 4)
 
 			try:
 				found = self.__cursor.execute(query, param)
 
 			except MySQLdb.OperationalError as mysql_error:
-				print('MySQLdb.OperationalError, err="%s"' % mysql_error)
+				log.error('MySQLdb.OperationalError, err="%s"', mysql_error, 2)
 				ret_connect = Connect._connect(self)
 				if ret_connect == -1:
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor, err="%s"' % mysql_error)
@@ -228,12 +236,12 @@ class Connect(object):
 				found = self.__cursor.execute(query, param)
 
 			except BaseException as emsg:
-				print('mysql Exception, execute err="%s"', emsg)
+				log.error('mysql Exception, execute err="%s"', emsg, 2)
 				raise
 
 			run_time = time.time() - start_time
 
-			print('execute query: time=%.3fs found=%s' % (run_time, found))
+			log.info('execute query: time=%.3fs found=%s', (run_time, found), 2)
 			return found
 
 
@@ -249,7 +257,7 @@ class Connect(object):
 
 			run_time = time.time() - start_time
 
-			print('fetch%s query: time=%.3fs' % (fetch_type, run_time,))
+			log.info('fetch%s query: time=%.3fs', (fetch_type, run_time,), 2)
 			return ret
 
 
@@ -273,7 +281,7 @@ class Connect(object):
 				self.__cursor.close()
 
 			except BaseException as emsg:
-				print('mysql Exception, cursor close err="%s"', emsg)
+				log.error('mysql Exception, cursor close err="%s"', emsg, 2)
 
 
 		def select(self, table_name, where_dict, column_list=(), limit=0):
@@ -290,7 +298,7 @@ class Connect(object):
 				data (array): data from fetchall() """
 
 			if not table_name:
-				self.__debug('select: table_name must be input')
+				log.error('select: table_name must be input', (), 2)
 				return 0, None
 
 			(sql_where, sql_param) = _sql_where(where_dict)
@@ -310,7 +318,7 @@ class Connect(object):
 			""" Simple INSERT """
 
 			if not table_name or not value_dict:
-				self.__debug('insert: table_name/value_dict must be input')
+				log.error('insert: table_name/value_dict must be input', (), 2)
 				return 0
 
 			(sql_set, sql_param) = _sql_set(value_dict)
@@ -326,7 +334,7 @@ class Connect(object):
 			""" Simple UPDATE """
 
 			if not table_name and not value_dict:
-				self.__debug('update: table_name/value_dict must be input')
+				log.error('update: table_name/value_dict must be input', (), 2)
 				return 0
 
 			(sql_set, sql_param) = _sql_set(value_dict)
@@ -346,7 +354,7 @@ class Connect(object):
 			""" Simple DELETE """
 
 			if not table_name:
-				self.__debug('delete: table_name must be input')
+				log.error('delete: table_name must be input', (), 2)
 				return 0
 
 			if not where_dict:

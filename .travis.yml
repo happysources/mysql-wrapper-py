@@ -23,16 +23,14 @@ branches:
   - feature/*
 
 install:
-  - sudo apt-get install -y pylint3
-  - sudo apt-get install -y python3-mysqldb python3-pip 
-#libmysqlclient-dev python3-dev
-#  - sudo apt-get install -y dpkg-dev dpkg
+  - sudo apt-get install -y python3-mysqldb python3-pip pylint3 python3
   - sudo dpkg -L python3-mysqldb
   - sudo pip3 install --upgrade pip
   - sudo pip3 install -U pytest
   - sudo pip3 install -r requirements.txt
 
 before_script:
+  - wget -O - https://raw.githubusercontent.com/erikni/logni.py/develop/setup.sh | bash
   - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/mysqlwrapper/
   - mysql -u root < test_db.sql
 
@@ -45,7 +43,7 @@ script:
 #  - pytest
  
   - echo "run mysqlwrapper.py ... "
-  - python mysqlwrapper/mysqlwrapper.py
+  - python3 mysqlwrapper/mysqlwrapper.py
 
   - echo "run examples ... "
-  - python test/example/basic_example.py
+  - python3 test/example/basic_example.py
