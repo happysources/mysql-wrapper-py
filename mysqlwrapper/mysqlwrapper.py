@@ -99,11 +99,11 @@ class Connect(object):
 		except BaseException as emsg:
 			log.error('mysql INIT host=%s:%s, user=%s, connect error=%s',\
 				(self._param['host'], self._param['port'], self._param['user'],\
-				emsg), 2)
+				emsg), priority=2)
 			if self._param.get('dummy', 1):
 				log.warn('mysql INIT host=%s:%s, user=%s, no connect',\
 					(self._param['host'], self._param['port'],\
-					self._param['user'], emsg), 2)
+					self._param['user'], emsg), priority=2)
 				return -1
 
 			raise
@@ -119,7 +119,7 @@ class Connect(object):
 
 		log.info('mysql INIT host=%s:%s, user=%s -> name=%s, time=%sms, connect OK',\
 			(self._param['host'], self._param['port'], self.__name,\
-			self._param['user'], self.__connect_time), 2)
+			self._param['user'], self.__connect_time), priority=2)
 
 
 	def _dbh(self):
@@ -145,8 +145,8 @@ class Connect(object):
 		try:
 			self.__share['dbh'].close()
 		except BaseException as emsg:
-			log.error('mysql Exception, database %s close err="%s"', (self.__name, emsg), 2)
-
+			log.error('mysql Exception, database %s close err="%s"',\
+				(self.__name, emsg), priority=2)
 
 
 	class Cursor(object):
@@ -167,7 +167,6 @@ class Connect(object):
 
 			self._param = dbh._param
 			self.__share = {'dbh':dbh}
-			
 
 			# default
 			self.__cursor = None
@@ -183,24 +182,24 @@ class Connect(object):
 		def __debug(self, msg):
 			""" debug message """
 			if self.__debug_level:
-				log.debug('mysql %s debug=%s', (self.__name, msg), 1)
+				log.debug('mysql %s debug=%s', (self.__name, msg), priority=1)
 
 
 		def __create(self):
 			""" create cursor """
 
-			log.debug('create() __dbh dir: %s', dir(self.__dbh), 1)
+			log.debug('create() __dbh dir: %s', dir(self.__dbh), priority=1)
 
 			if not self.__dbh._dbh():
-				log.error('mysql %s cursor: no connect', (self.__name,), 2)
+				log.error('mysql %s cursor: no connect', (self.__name,), priority=2)
 				return False
 
 			if self.__dict_cursor:
-				log.error('mysql %s cursor: exist', (self.__name,), 1)
+				log.error('mysql %s cursor: exist', (self.__name,), priority=1)
 				self.__cursor = self.__dbh._dbh().cursor(MySQLdb.cursors.DictCursor)
 				return True
 
-			log.error('mysql %s cursor: create', (self.__name,), 1)
+			log.error('mysql %s cursor: create', (self.__name,), priority=1)
 			self.__cursor = self.__dbh._dbh().cursor()
 			return True
 
@@ -213,7 +212,7 @@ class Connect(object):
 				ret_connect = self.__dbh._connect()
 				if ret_connect == -1:
 					log.error('MySQLdb.InterfaceError %s: No connect for cursor [first connect]',\
-						(self.__name,), 2)
+						(self.__name,), priority=2)
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor [first connect]')
 
 				self.__cursor()
@@ -233,8 +232,10 @@ class Connect(object):
 			# sql execute
 			start_time = time.time()
 
-			log.debug('mysql %s execute param: %s', (self.__name, str(param)), 3)
-			log.debug('mysql %s execute query: %s', (self.__name, query), 3)
+			log.debug('mysql %s execute param: %s',\
+				(self.__name, str(param)), priority=3)
+			log.debug('mysql %s execute query: %s',\
+				(self.__name, query), priority=3)
 
 			__query = query % tuple(param)
 			log.debug('execute %s sql: %s', (self.__name, __query), 4)
@@ -244,7 +245,7 @@ class Connect(object):
 
 			except MySQLdb.OperationalError as mysql_error:
 				log.error('MySQLdb.OperationalError %s, err="%s"',\
-					(self.__name, mysql_error), 2)
+					(self.__name, mysql_error), priority=2)
 				ret_connect = Connect._connect(self)
 				if ret_connect == -1:
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor, err="%s"' % mysql_error)
@@ -252,13 +253,14 @@ class Connect(object):
 				found = self.__cursor.execute(query, param)
 
 			except BaseException as emsg:
-				log.error('mysql Exception, execute %s err="%s"', (self.__name, emsg), 2)
+				log.error('mysql Exception, execute %s err="%s"',\
+					(self.__name, emsg), priority=2)
 				raise
 
 			run_time = int((time.time() - start_time) * 1000)
 
 			log.info('mysql %s execute query: "%s" time=%sms found=%s',\
-				(self.__name, __query, run_time, found), 2)
+				(self.__name, __query, run_time, found), priority=2)
 
 			return found
 
@@ -276,18 +278,20 @@ class Connect(object):
 			run_time = int((time.time() - start_time) * 1000)
 
 			log.info('mysql %s fetch%s query: time=%sms',\
-				(self.__name, fetch_type, run_time,), 2)
+				(self.__name, fetch_type, run_time,), priority=2)
 
 			return ret
 
 
 		def fetchall(self):
 			""" cursor fetchall """
+
 			return self.__fetch('all')
 
 
 		def fetchone(self):
 			""" cursor fetchone """
+
 			return self.__fetch('one')
 
 
@@ -297,8 +301,8 @@ class Connect(object):
 			insert_id = self.__dbh.insert_id()
 
 			log.info('mysql %s insert_id(): %s',\
-				(self.__name, insert_id), 2)
-	
+				(self.__name, insert_id), priority=2)
+
 			return insert_id
 
 
@@ -310,7 +314,7 @@ class Connect(object):
 
 			except BaseException as emsg:
 				log.error('mysql Exception, cursor %s close err="%s"',\
-					(self.__name, emsg), 2)
+					(self.__name, emsg), priority=2)
 
 
 		def select(self, table_name, where_dict, column_list=(), limit=0):
@@ -327,7 +331,7 @@ class Connect(object):
 				data (array): data from fetchall() """
 
 			if not table_name:
-				log.error('select: table_name must be input', (), 2)
+				log.error('select: table_name must be input', priority=2)
 				return 0, None
 
 			(sql_where, sql_param) = _sql_where(where_dict)
@@ -347,7 +351,7 @@ class Connect(object):
 			""" Simple INSERT """
 
 			if not table_name or not value_dict:
-				log.error('insert: table_name/value_dict must be input', (), 2)
+				log.error('insert: table_name/value_dict must be input', priority=2)
 				return 0
 
 			(sql_set, sql_param) = _sql_set(value_dict)
@@ -363,7 +367,7 @@ class Connect(object):
 			""" Simple UPDATE """
 
 			if not table_name and not value_dict:
-				log.error('update: table_name/value_dict must be input', (), 2)
+				log.error('update: table_name/value_dict must be input', priority=2)
 				return 0
 
 			(sql_set, sql_param) = _sql_set(value_dict)
@@ -383,7 +387,7 @@ class Connect(object):
 			""" Simple DELETE """
 
 			if not table_name:
-				log.error('delete: table_name must be input', (), 2)
+				log.error('delete: table_name must be input', priority=2)
 				return 0
 
 			if not where_dict:
