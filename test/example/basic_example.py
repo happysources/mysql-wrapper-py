@@ -7,24 +7,29 @@ Example for MySQL wrapper
 
 import sys
 import pprint
+import time
 sys.path.append('mysqlwrapper')
 
 import mysqlwrapper
 
+SLEEP = 1
 DBH = mysqlwrapper.Connect(user='test_user', passwd='test_passwd', db='test_db', param={'debug':1})
 CURSOR = DBH.cursor()
 
 CURSOR.execute('SELECT * FROM test_table LIMIT 5')
 pprint.pprint(CURSOR.fetchall())
+time.sleep(SLEEP)
 print()
 
 CURSOR.execute('SELECT * FROM test_table LIMIT 5')
 pprint.pprint(CURSOR.fetchone())
+time.sleep(SLEEP)
 print()
 
 print('simple select without where')
 print(CURSOR.select(table_name='test_table', where_dict=None, column_list=[], limit=0))
 print()
+time.sleep(SLEEP)
 
 print('simple select with where id=1')
 print(CURSOR.select(table_name='test_table', limit=0, where_dict={'id':1}))

@@ -11,7 +11,7 @@ MySQL wrapper
 
 import time
 
-from mysqlwrapper_util import _sql_where, _sql_column, _sql_limit, _sql_set
+from mysqlwrapper_util import _sql_where, _sql_column, _sql_limit, _sql_set, _sql_now
 from logni import log
 
 
@@ -54,13 +54,8 @@ class Connect(object):
 			'name':'',\
 		}
 
-		if not self._param['name']:
-			self._param['name'] = '%s.%s' % \
-				(self._param['host'], self._param['db'])
-		self.__name = self._param['name']
-
 		# default
-		self.__share = {'dbh':None}
+		self._share = {'dbh':None}
 
 		#if not self.__conv:
 		#	from MySQLdb.converters import conversions
@@ -75,15 +70,22 @@ class Connect(object):
 
 
 	def __getattr__(self, name):
-		return getattr(self.__share['dbh'], name)
+		return getattr(self._share['dbh'], name)
 
 
 	def _connect(self):
 		""" connect """
-
 		start_time = time.time()
+
+		# name
+		if not self._param['name']:
+			self._param['name'] = '%s.%s' % \
+				(self._param['host'], self._param['db'])
+		self._name = self._param['name']
+
+		# dbh
 		dbh = None
-		self.__share = {'dbh':dbh}
+		self._share = {'dbh':dbh}
 
 		# connect
 		try:
@@ -103,8 +105,8 @@ class Connect(object):
 			if self._param.get('dummy', 1):
 				log.warn('mysql INIT host=%s:%s, user=%s, no connect',\
 					(self._param['host'], self._param['port'],\
-					self._param['user'], emsg), priority=2)
-				return -1
+					self._param['user']), priority=2)
+				return False
 
 			raise
 
@@ -115,16 +117,18 @@ class Connect(object):
 		# connect time
 		self.__connect_time = int((time.time() - start_time) * 1000)
 
-		self.__share['dbh'] = dbh
+		self._share['dbh'] = dbh
 
 		log.info('mysql INIT host=%s:%s, user=%s -> name=%s, time=%sms, connect OK',\
-			(self._param['host'], self._param['port'], self.__name,\
+			(self._param['host'], self._param['port'], self._name,\
 			self._param['user'], self.__connect_time), priority=2)
 
 
+		return True
+
 	def _dbh(self):
 		""" dbh """
-		return self.__share['dbh']
+		return self._share['dbh']
 
 
 	def cursor(self, dict_cursor=None):
@@ -135,7 +139,7 @@ class Connect(object):
 
 		return self.Cursor(dbh=self,\
 			dict_cursor=dict_cursor,\
-			name=self.__name,\
+			name=self._name,\
 			debug=self._param['debug'])
 
 
@@ -143,10 +147,10 @@ class Connect(object):
 		""" close """
 
 		try:
-			self.__share['dbh'].close()
+			self._share['dbh'].close()
 		except BaseException as emsg:
-			log.error('mysql Exception, database %s close err="%s"',\
-				(self.__name, emsg), priority=2)
+			log.error('mysql %s close: err="%s"',\
+				(self._name, emsg), priority=2)
 
 
 	class Cursor(object):
@@ -159,6 +163,9 @@ class Connect(object):
 				dbh (object): database connect
 				dict_cursor (int): dictionary cursor """
 
+			log.debug('cursor.__init__(dbh=%s, dict_cursor=%s, name=%s, debug=%s)',\
+				(dbh, dict_cursor, name, debug))
+
 			# input params
 			self.__dbh = dbh
 			self.__dict_cursor = dict_cursor
@@ -166,7 +173,7 @@ class Connect(object):
 			self.__debug_level = debug
 
 			self._param = dbh._param
-			self.__share = {'dbh':dbh}
+			self._share = {'dbh':dbh}
 
 			# default
 			self.__cursor = None
@@ -188,7 +195,7 @@ class Connect(object):
 		def __create(self):
 			""" create cursor """
 
-			log.debug('create() __dbh dir: %s', dir(self.__dbh), priority=1)
+			log.debug('cursor.create() __dbh dir: %s', dir(self.__dbh))
 
 			if not self.__dbh._dbh():
 				log.error('mysql %s cursor: no connect', (self.__name,), priority=2)
@@ -207,15 +214,22 @@ class Connect(object):
 		def __test(self):
 			""" tested cursor if exist? """
 
+			log.debug('cursor.__test()')
+
 			# reconnect id cursor not exist
 			if not self.__cursor:
 				ret_connect = self.__dbh._connect()
-				if ret_connect == -1:
-					log.error('MySQLdb.InterfaceError %s: No connect for cursor [first connect]',\
+				log.debug('mysql %s reconnect is %s', (self.__name, ret_connect), priority=4)
+				if not ret_connect:
+					log.error('mysql %s connect: No connect for cursor [first connect]',\
 						(self.__name,), priority=2)
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor [first connect]')
+			
+				# create new cursor
+				self.__create()
 
-				self.__cursor()
+				# test for execute
+				self.__cursor.execute('SELECT now()')
 
 			return True
 
@@ -232,29 +246,27 @@ class Connect(object):
 			# sql execute
 			start_time = time.time()
 
-			log.debug('mysql %s execute param: %s',\
-				(self.__name, str(param)), priority=3)
-			log.debug('mysql %s execute query: %s',\
-				(self.__name, query), priority=3)
-
 			__query = query % tuple(param)
-			log.debug('execute %s sql: %s', (self.__name, __query), 4)
+			log.debug('mysql %s execute: "%s"', (self.__name, __query), priority=4)
 
 			try:
 				found = self.__cursor.execute(query, param)
 
-			except MySQLdb.OperationalError as mysql_error:
-				log.error('MySQLdb.OperationalError %s, err="%s"',\
-					(self.__name, mysql_error), priority=2)
-				ret_connect = Connect._connect(self)
-				if ret_connect == -1:
-					raise MySQLdb.InterfaceError(0, 'No connect for cursor, err="%s"' % mysql_error)
+			# mysql error
+			except MySQLdb.OperationalError as mysql_err:
+				log.error('mysql %s execute: OperationalError="%s"',\
+					(self.__name, mysql_err), priority=2)
+
+				# reset cursor + try reconnect
+				self.__cursor = None
+				self.__test()
 
 				found = self.__cursor.execute(query, param)
 
-			except BaseException as emsg:
-				log.error('mysql Exception, execute %s err="%s"',\
-					(self.__name, emsg), priority=2)
+			# unspecified error
+			except BaseException as base_err:
+				log.error('mysql %s execute: err="%s"',\
+					(self.__name, base_err), priority=2)
 				raise
 
 			run_time = int((time.time() - start_time) * 1000)
@@ -277,8 +289,8 @@ class Connect(object):
 
 			run_time = int((time.time() - start_time) * 1000)
 
-			log.info('mysql %s fetch%s query: time=%sms',\
-				(self.__name, fetch_type, run_time,), priority=2)
+			log.info('mysql %s fetch%s query: time=%sms found=%s',\
+				(self.__name, fetch_type, run_time, len(ret)), priority=2)
 
 			return ret
 
@@ -298,7 +310,12 @@ class Connect(object):
 		def insert_id(self):
 			""" last insert_id """
 
-			insert_id = self.__dbh.insert_id()
+			try:
+				insert_id = self.__dbh.insert_id()
+			except BaseException as base_err:
+				log.error('mysql %s insert_id(): err=%s',\
+					(self.__name, base_err), priority=2)
+				return 0
 
 			log.info('mysql %s insert_id(): %s',\
 				(self.__name, insert_id), priority=2)
@@ -309,11 +326,13 @@ class Connect(object):
 		def close(self):
 			""" cursor close """
 
+			log.debug('cursor.close()')
+
 			try:
 				self.__cursor.close()
 
 			except BaseException as emsg:
-				log.error('mysql Exception, cursor %s close err="%s"',\
+				log.error('mysql %s cursor: close err="%s"',\
 					(self.__name, emsg), priority=2)
 
 
@@ -346,9 +365,16 @@ class Connect(object):
 
 			return found, self.__cursor.fetchall()
 
-
 		def insert(self, table_name, value_dict):
 			""" Simple INSERT """
+			return self.__insert('INSERT', table_name, value_dict)
+
+		def replace(self, table_name, value_dict):
+			""" Simple REPLACE """
+			return self.__insert('REPLACE', table_name, value_dict)
+
+		def __insert(self, sql_type, table_name, value_dict):
+			""" Simple INSERT / REPLACE """
 
 			if not table_name or not value_dict:
 				log.error('insert: table_name/value_dict must be input', priority=2)
@@ -356,8 +382,8 @@ class Connect(object):
 
 			(sql_set, sql_param) = _sql_set(value_dict)
 
-			found = self.execute('INSERT INTO `%s` SET %s' % (\
-				table_name, sql_set),\
+			found = self.execute('%s INTO `%s` SET %s' % (\
+				sql_type, table_name, sql_set),\
 				sql_param)
 
 			return found
@@ -400,3 +426,8 @@ class Connect(object):
 				sql_param)
 
 			return found
+
+		def now(self):
+			""" now """
+
+			return _sql_now()
