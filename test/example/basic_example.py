@@ -35,6 +35,10 @@ print('simple select with where id=1')
 print(CURSOR.select(table_name='test_table', limit=0, where_dict={'id':1}))
 print()
 
+print('simple select - not found')
+print(CURSOR.select(table_name='test_table', limit=0, where_dict={'id':1000}))
+print()
+
 print('simple update')
 print(CURSOR.update('test_table', {'value_str':'one 1'}, {'id':1}, limit=1))
 print()

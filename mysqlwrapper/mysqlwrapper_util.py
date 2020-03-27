@@ -56,9 +56,15 @@ def _sql_value(value_dict):
 	params = []
 
 	for value_name in value_dict:
-		name_values.append('`%s`=%%s' % value_name)
-		params.append(value_dict[value_name])
+		value_val = value_dict[value_name]
 
+		if type(value_val) == type([]):
+			name_values.append('`%s` IN %%s' % value_name)
+		else:
+			name_values.append('`%s`=%%s' % value_name)
+
+		params.append(value_val)
+	
 	return name_values, params
 
 

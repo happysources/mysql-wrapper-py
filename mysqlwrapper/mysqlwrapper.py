@@ -361,7 +361,7 @@ class Connect(object):
 				sql_param)
 
 			if found == 0:
-				return found, None
+				return found, []
 
 			return found, self.__cursor.fetchall()
 
