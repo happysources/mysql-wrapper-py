@@ -14,6 +14,7 @@ import mysqlwrapper
 
 SLEEP = 0
 DBH = mysqlwrapper.Connect(user='test_user', passwd='test_passwd', db='test_db', param={'debug':1})
+print(dir(DBH))
 CURSOR = DBH.cursor()
 
 CURSOR.execute('SELECT * FROM test_table LIMIT 5')
@@ -37,8 +38,10 @@ print()
 
 print('simple select - not found')
 print(CURSOR.select(table_name='test_table', limit=0, where_dict={'id':1000}))
+CURSOR.close()
 print()
 
+CURSOR = DBH.cursor()
 print('simple update')
 print(CURSOR.update('test_table', {'value_str':'one 1'}, {'id':1}, limit=1))
 print()
@@ -49,17 +52,23 @@ print()
 
 print('simple delete')
 print(CURSOR.delete('test_table', {'value_str':'new', 'value_int':100}, limit=1))
+DBH.commit()
+CURSOR.close()
 print()
 
 
-print('cursor execute')
-print(CURSOR.execute('SELECT * FROM test_table'))
-print(CURSOR.execute('SELECT * FROM test_table'))
-print(CURSOR.execute('SELECT * FROM test_table'))
+print('cursor execute: select')
+CURSOR = DBH.cursor()
+for ni in range(1, 3):
+	print(CURSOR.execute('SELECT * FROM test_table'))
+	print(CURSOR.fetchone())
+CURSOR.close()
+print()
 
-print('cursor execute')
+print('cursor execute: insert')
+CURSOR = DBH.cursor()
 for no in range(100, 104):
 	print(CURSOR.execute('INSERT INTO `test_table` SET `value_int`=%s, `value_str`=%s', (no, 'new%s' % no)))
-
 CURSOR.close()
+
 DBH.close()

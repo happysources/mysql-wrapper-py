@@ -119,9 +119,9 @@ class Connect(object):
 
 		self._share['dbh'] = dbh
 
-		log.info('mysql INIT host=%s:%s, user=%s -> name=%s, time=%sms, connect OK',\
+		log.info('mysql INIT host=%s:%s, user=%s -> name=%s, thread_id=%s, time=%sms, connect OK',\
 			(self._param['host'], self._param['port'], self._name,\
-			self._param['user'], self.__connect_time), priority=2)
+			self._param['user'], dbh.thread_id(), self.__connect_time), priority=2)
 
 
 		return True
@@ -143,6 +143,25 @@ class Connect(object):
 			debug=self._param['debug'])
 
 
+	def thread_id(self):
+		""" thread id """
+		return self._share['dbh'].dbh.thread_id()
+
+
+	def commit(self):
+		""" commit """
+
+		try:
+			self._share['dbh'].commit()
+		except BaseException as emsg:
+			log.error('mysql %s commit: err="%s"',\
+				(self._name, emsg), priority=2)
+			return False
+
+		log.info('mysql %s commit', self._name, priority=2)
+		return True
+
+
 	def close(self):
 		""" close """
 
@@ -151,6 +170,10 @@ class Connect(object):
 		except BaseException as emsg:
 			log.error('mysql %s close: err="%s"',\
 				(self._name, emsg), priority=2)
+			return False
+
+		log.info('mysql %s close', self._name, priority=2)
+		return True
 
 
 	class Cursor(object):
@@ -177,6 +200,7 @@ class Connect(object):
 
 			# default
 			self.__cursor = None
+			self.__thread_id = 0
 
 			# create cursor
 			self.__create()
@@ -195,18 +219,22 @@ class Connect(object):
 		def __create(self):
 			""" create cursor """
 
-			log.debug('cursor.create() __dbh dir: %s', dir(self.__dbh))
+			log.debug('cursor.create()')
 
 			if not self.__dbh._dbh():
 				log.error('mysql %s cursor: no connect', (self.__name,), priority=2)
 				return False
 
 			if self.__dict_cursor:
-				log.info('mysql %s dict cursor: create', (self.__name,), priority=1)
+				self.__thread_id = self.__dbh._dbh().thread_id()
+				log.info('mysql %s dict cursor: create -> dbh.thread_id=%s',\
+					(self.__name, self.__thread_id), priority=1)
 				self.__cursor = self.__dbh._dbh().cursor(MySQLdb.cursors.DictCursor)
 				return True
 
-			log.error('mysql %s tuple cursor: create', (self.__name,), priority=1)
+			self.__thread_id = self.__dbh._dbh().thread_id()
+			log.error('mysql %s tuple cursor: create -> dbh.thread_id=%s',\
+				(self.__name, self.__thread_id), priority=1)
 			self.__cursor = self.__dbh._dbh().cursor()
 			return True
 
@@ -224,7 +252,7 @@ class Connect(object):
 					log.error('mysql %s connect: No connect for cursor [first connect]',\
 						(self.__name,), priority=2)
 					raise MySQLdb.InterfaceError(0, 'No connect for cursor [first connect]')
-			
+
 				# create new cursor
 				self.__create()
 
@@ -271,8 +299,8 @@ class Connect(object):
 
 			run_time = int((time.time() - start_time) * 1000)
 
-			log.info('mysql %s execute query: "%s" time=%sms found=%s',\
-				(self.__name, __query, run_time, found), priority=2)
+			log.info('mysql %s execute query: "%s" time=%sms found=%s dbh.thread_id=%s',\
+				(self.__name, __query, run_time, found, self.__thread_id), priority=2)
 
 			return found
 
