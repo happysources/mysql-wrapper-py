@@ -202,11 +202,11 @@ class Connect(object):
 				return False
 
 			if self.__dict_cursor:
-				log.error('mysql %s cursor: exist', (self.__name,), priority=1)
+				log.info('mysql %s dict cursor: create', (self.__name,), priority=1)
 				self.__cursor = self.__dbh._dbh().cursor(MySQLdb.cursors.DictCursor)
 				return True
 
-			log.error('mysql %s cursor: create', (self.__name,), priority=1)
+			log.error('mysql %s tuple cursor: create', (self.__name,), priority=1)
 			self.__cursor = self.__dbh._dbh().cursor()
 			return True
 
