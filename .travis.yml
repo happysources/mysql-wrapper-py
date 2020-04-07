@@ -23,8 +23,7 @@ branches:
   - feature/*
 
 install:
-  - sudo apt-get install -y python3-mysqldb python3-pip pylint3 python3
-  - sudo dpkg -L python3-mysqldb
+  - sudo apt-get install -y python3-mysqldb python3-pymysql python3-pip pylint3 python3
   - sudo pip3 install --upgrade pip
   - sudo pip3 install -U pytest
   - sudo pip3 install -r requirements.txt
