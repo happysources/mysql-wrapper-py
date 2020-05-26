@@ -4,6 +4,7 @@
 # todo:
 # pylint: disable=no-member
 # pylint: disable=protected-access
+# pylint: disable=no-self-use
 
 """
 MySQL wrapper
@@ -49,7 +50,6 @@ class Connect(object):
 			'port':param.get('port', 3306),\
 			'connect_timeout':param.get('connect_timeout', 5),\
 			'dict_cursor':param.get('dict_cursor', 1),\
-			'dict_cursor':param.get('dict_cursor', 1),\
 			'charset':param.get('charset', 'utf8'),\
 			'autocommit':param.get('autocommit', 1),\
 			'dummy':param.get('dummy', 1),\
@@ -81,12 +81,12 @@ class Connect(object):
 		# connect
 		try:
 
-			dbc = pymysql.connect(host=self.__param['host'],
-				user=self.__param['user'],
-				password=self.__param['passwd'],
-				db=self.__param['db'],
+			dbc = pymysql.connect(host=self.__param['host'],\
+				user=self.__param['user'],\
+				password=self.__param['passwd'],\
+				db=self.__param['db'],\
 				port=self.__param['port'],\
-				charset=self.__param['charset'],
+				charset=self.__param['charset'],\
 				cursorclass=pymysql.cursors.DictCursor)
 
 			self.__connect_time = time.time() - start_time
@@ -124,6 +124,7 @@ class Connect(object):
 
 
 	def __dbi(self):
+		""" connect db """
 
 		if self.__param['separate connect'] == 1:
 			return self.connect()
@@ -132,15 +133,15 @@ class Connect(object):
 
 
 	def __db_close(self, dbh):
+		""" close db """
 
-		
 		if self.__param['separate connect'] == 1:
 			log.debug('mysql %s close -> thread_id=%s', (self.__name, dbh.thread_id), priority=2)
 			dbh.close()
 			return True
 
 		return True
-		
+
 
 
 	def thread_id(self):
@@ -193,7 +194,7 @@ class Connect(object):
 		start_time = time.time()
 
 		__query = query % tuple(param)
-		log.debug('mysql %s execute [%s]: "%s"', (self.__name, rand, __query), priority=4)
+		#log.debug('mysql %s execute [%s]: "%s"', (self.__name, rand, __query), priority=4)
 
 		#try:
 		found = cursor.execute(query, param)
@@ -202,7 +203,7 @@ class Connect(object):
 		#except MySQLdb.OperationalError as mysql_err:
 		#	log.error('mysql %s execute [%s]: OperationalError="%s"',\
 		#		(self.__name, rand, mysql_err), priority=2)
-		#	
+		#
 		#	# reset cursor + try reconnect
 		#	cursor.close()
 		#	cursor = self.__dbc.cursor()
@@ -255,7 +256,7 @@ class Connect(object):
 		cursor, data = self.__fetchall(cursor, rand)
 		cursor.close()
 		self.__db_close(dbh)
-		
+
 		del rand, cursor, dbh
 		return found, data
 
@@ -326,7 +327,7 @@ class Connect(object):
 			return 0
 
 		(sql_set, sql_param) = _sql_set(value_dict)
-		
+
 		dbh = self.__dbi()
 		cursor = dbh.cursor()
 		cursor, found = self.__execute(cursor, '%s INTO `%s` SET %s' % (\

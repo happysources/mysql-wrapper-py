@@ -64,7 +64,7 @@ def _sql_value(value_dict):
 			name_values.append('`%s`=%%s' % value_name)
 
 		params.append(value_val)
-	
+
 	return name_values, params
 
 

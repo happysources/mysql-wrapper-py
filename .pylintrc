@@ -3,3 +3,6 @@ indent-string=\t
 
 [MASTER]
 init-hook='import sys; sys.path.append("mysqlwrapper/")'
+
+[DESIGN]
+max-args=6
