@@ -326,7 +326,7 @@ class Connect(object):
 			log.error('insert: table_name/value_dict must be input', priority=2)
 			return 0
 
-		(sql_set, sql_param) = _sql_set(value_dict)
+		(sql_set, sql_param) = _sql_set(value_dict, sql_type)
 
 		dbh = self.__dbi()
 		cursor = dbh.cursor()
@@ -352,7 +352,7 @@ class Connect(object):
 			log.error('update: table_name/value_dict must be input', priority=2)
 			return 0
 
-		(sql_set, sql_param) = _sql_set(value_dict)
+		(sql_set, sql_param) = _sql_set(value_dict, 'update')
 		(sql_where, params2) = _sql_where(where_dict)
 
 		for param_name in params2:

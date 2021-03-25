@@ -49,7 +49,7 @@ def _sql_column(column_list, table_name=None):
 	return ret
 
 
-def _sql_value(value_dict):
+def _sql_value(value_dict, sql_type='select'):
 	""" sql NAME=VALUE """
 
 	name_values = []
@@ -60,21 +60,30 @@ def _sql_value(value_dict):
 
 		if type(value_val) == type([]):
 			name_values.append('`%s` IN %%s' % value_name)
+			params.append(value_val)
+			continue
+
+		if value_val:
+			name_values.append('`%s`=%%s' % value_name)
+			params.append(value_val)
+			continue
+
+		if sql_type == 'select':
+			name_values.append('`%s` is NULL' % value_name)
 		else:
 			name_values.append('`%s`=%%s' % value_name)
-
-		params.append(value_val)
+			params.append(value_val)
 
 	return name_values, params
 
 
-def _sql_set(value_dict):
+def _sql_set(value_dict, sql_type='insert'):
 	""" sql SET """
 
 	if not value_dict:
 		return '', []
 
-	sets, params = _sql_value(value_dict)
+	sets, params = _sql_value(value_dict, sql_type)
 
 	sql_set = ', '.join(sets)
 
@@ -88,7 +97,7 @@ def _sql_where(where_dict):
 	if not where_dict:
 		return '', []
 
-	wheres, params = _sql_value(where_dict)
+	wheres, params = _sql_value(where_dict, 'select')
 
 	sql_where = ' WHERE %s ' % ' AND '.join(wheres)
 
@@ -110,5 +119,5 @@ def _sql_limit(limit=0):
 def _debug(msg):
 	""" debug message """
 
-	#if self.__debug_level:
-	print(msg)
+	if self.__debug_level:
+		print(msg)
