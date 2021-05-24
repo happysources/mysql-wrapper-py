@@ -63,7 +63,7 @@ def _sql_value(value_dict, sql_type='select'):
 			params.append(value_val)
 			continue
 
-		if value_val:
+		if value_val not in (None, ''):
 			name_values.append('`%s`=%%s' % value_name)
 			params.append(value_val)
 			continue
